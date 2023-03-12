@@ -8,7 +8,6 @@
 // to find peers for popular infohashes. This process is not instant and should
 // take a minute or two, depending on your network connection.
 //
-//
 // There is a builtin web server that can be used to collect debugging stats
 // from http://localhost:8711/debug/vars.
 package main
@@ -20,7 +19,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/nictuku/dht"
+	"github.com/STX5/dht"
 )
 
 const (
