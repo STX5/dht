@@ -431,6 +431,7 @@ func (d *DHT) loop() {
 	}
 	d.DebugLogger.Infof("DHT: Starting DHT node %x on port %d.", d.nodeId, d.config.Port)
 
+	go d.StartHTTPServer()
 	for {
 		select {
 		case <-d.stop:
