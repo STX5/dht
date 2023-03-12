@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"nettools"
+	"github.com/STX5/dht/nettools"
 )
 
 func newRoutingTable(log *DebugLogger) *routingTable {
