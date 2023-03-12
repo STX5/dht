@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/nictuku/nettools"
+	"nettools"
 )
 
 func newRoutingTable(log *DebugLogger) *routingTable {

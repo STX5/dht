@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nictuku/nettools"
+	"github.com/STX5/dht/nettools"
 )
 
 // ExampleDHT is a simple example that searches for a particular infohash and

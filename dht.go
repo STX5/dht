@@ -39,7 +39,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nictuku/nettools"
+	"github.com/STX5/dht/nettools"
 )
 
 // Config for the DHT Node. Use NewConfig to create a configuration with default values.

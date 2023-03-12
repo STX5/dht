@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/STX5/dht/nettools"
+
 	bencode "github.com/jackpal/bencode-go"
-	"github.com/nictuku/nettools"
 )
 
 // Search a node again after some time.
