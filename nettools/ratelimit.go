@@ -3,18 +3,24 @@ package nettools
 import (
 	"time"
 
-	"github.com/youtube/vitess/go/cache"
+	"vitess.io/vitess/go/cache"
 )
 
 // NewThrottle creates a new client throttler that blocks spammy clients.
 // UPDATED in 2015-01-17: clients now have to specify the limits. Use 10 and
 // 1000 if you want to use the old default values.
+//
+// UPDATED in 2023-03-12: Use the latest vitess LRUCache implementation
 func NewThrottler(maxPerMinute int, maxHosts int64) *ClientThrottle {
 	r := ClientThrottle{
 		maxPerMinute: maxPerMinute,
-		c:            cache.NewLRUCache(maxHosts),
-		blocked:      cache.NewLRUCache(maxHosts),
-		stop:         make(chan bool),
+		c: cache.NewLRUCache(maxHosts, func(a any) int64 {
+			return a.(hits).Size()
+		}),
+		blocked: cache.NewLRUCache(maxHosts, func(a any) int64 {
+			return a.(hits).Size()
+		}),
+		stop: make(chan bool),
 	}
 	go r.cleanup()
 	return &r
@@ -96,6 +102,6 @@ func (r *ClientThrottle) cleanup() {
 
 type hits int
 
-func (h hits) Size() int {
+func (h hits) Size() int64 {
 	return 1
 }
