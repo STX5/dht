@@ -34,6 +34,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"strings"
 	"sync"
@@ -77,8 +78,11 @@ type Config struct {
 	// ThrottlerTrackedClients is the number of hosts the client throttler remembers. An LRU is used to
 	// track the most interesting ones. Default value: 1000.
 	ThrottlerTrackedClients int64
-	//Protocol for UDP connections, udp4= IPv4, udp6 = IPv6
+	// Protocol for UDP connections, udp4= IPv4, udp6 = IPv6
 	UDPProto string
+	//
+	StartHTTPServer bool
+	//
 }
 
 // Creates a *Config populated with default values.
@@ -98,6 +102,7 @@ func NewConfig() *Config {
 		ClientPerMinuteLimit:    50,
 		ThrottlerTrackedClients: 1000,
 		UDPProto:                "udp4",
+		StartHTTPServer:         true,
 	}
 }
 
@@ -431,7 +436,11 @@ func (d *DHT) loop() {
 	}
 	d.DebugLogger.Infof("DHT: Starting DHT node %x on port %d.", d.nodeId, d.config.Port)
 
-	go d.StartHTTPServer()
+	if d.config.StartHTTPServer {
+		d.DebugLogger.Infof("HTTP server started on localhost:6666")
+		go d.StartHTTPServer("localhost", "6666")
+	}
+
 	for {
 		select {
 		case <-d.stop:
@@ -568,6 +577,31 @@ func (d *DHT) helloFromPeer(addr string) {
 		d.ping(addrResolved)
 		return
 	}
+}
+
+func (d *DHT) ADDHonestPeer(id, addr string) error {
+	// We've got a new node id. We need to:
+	// - see if we know it already, skip accordingly.
+	// - ping it and see if it's reachable.
+	// - if it responds, save it in the routing table.
+	_, _, existed, err := d.routingTable.hostPortToNode(addr, d.config.UDPProto)
+	if existed {
+		return nil
+	}
+	if err != nil {
+		d.DebugLogger.Debugf("AddHonestNode error: %v", err)
+		return err
+	}
+	if d.routingTable.length()+1 < d.config.MaxNodes {
+		r, err := d.routingTable.getOrCreateNode(id, addr, d.config.UDPProto)
+		if err != nil {
+			d.DebugLogger.Debugf("AddHonestNode error: %v", err)
+		}
+		log.Printf("node %v added", &r.address)
+		d.pingNode(r)
+		return nil
+	}
+	return nil
 }
 
 func (d *DHT) processPacket(p packetType) {

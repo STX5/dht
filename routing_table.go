@@ -36,7 +36,8 @@ type routingTable struct {
 
 // hostPortToNode finds a node based on the specified hostPort specification,
 // which should be a UDP address in the form "host:port".
-func (r *routingTable) hostPortToNode(hostPort string, port string) (node *remoteNode, addr string, existed bool, err error) {
+func (r *routingTable) hostPortToNode(hostPort string, port string) (
+	node *remoteNode, addr string, existed bool, err error) {
 	if hostPort == "" {
 		panic("programming error: hostPortToNode received a nil hostPort")
 	}

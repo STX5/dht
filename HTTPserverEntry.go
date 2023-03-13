@@ -1,13 +1,11 @@
 package dht
 
-import "net"
-
 // DHT node registration
 type Registration struct {
 	// infohash the dht node has
 	InfoHash []string
 	// DHT Node UPDAddr: IP and Port
-	NodeAddr net.UDPAddr
+	NodeAddr string
 	// DHT Node ID
 	Nodeid string
 	// DHT node runs a http server on this URL
