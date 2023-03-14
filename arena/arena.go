@@ -1,4 +1,4 @@
-package dht
+package arena
 
 // arena is a free list that provides quick access to pre-allocated byte
 // slices, greatly reducing memory churn and effectively disabling GC for these
@@ -8,21 +8,21 @@ package dht
 // zeroed, so the caller should only read positions that it knows to have been
 // overwitten. That can be done by shortening the slice at the right place,
 // based on the count of bytes returned by Write() and similar functions.
-type arena chan []byte
+type Arena chan []byte
 
-func newArena(blockSize int, numBlocks int) arena {
-	blocks := make(arena, numBlocks)
+func NewArena(blockSize int, numBlocks int) Arena {
+	blocks := make(Arena, numBlocks)
 	for i := 0; i < numBlocks; i++ {
 		blocks <- make([]byte, blockSize)
 	}
 	return blocks
 }
 
-func (a arena) Pop() (x []byte) {
+func (a Arena) Pop() (x []byte) {
 	return <-a
 }
 
-func (a arena) Push(x []byte) {
+func (a Arena) Push(x []byte) {
 	x = x[:cap(x)]
 	a <- x
 }

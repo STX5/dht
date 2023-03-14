@@ -1,4 +1,4 @@
-package dht
+package arena
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 func BenchmarkArena(b *testing.B) {
 	b.StopTimer()
-	a := newArena(1024, 1000)
+	a := NewArena(1024, 1000)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {

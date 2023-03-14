@@ -1,3 +1,5 @@
+github.com/STX5/dht v0.0.0-20230314061237-1fec9cca50d8 h1:Oi223OOYFMP2stKyUMgbzHXQjGeWBaqhYT/g6i0z0dk=
+github.com/STX5/dht v0.0.0-20230314061237-1fec9cca50d8/go.mod h1:nTMsVIM3MxJdR30u7XdMivzHzRxO4ck9g9SHz96CZ20=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da h1:oI5xCqsCo564l8iNU+DwB5epxmsaqB+rhGL0m5jtYqE=
 github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=

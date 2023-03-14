@@ -1,11 +1,12 @@
-package dht
+package remoteNode
 
 import (
+	"dht/util"
 	"testing"
 )
 
 func TestDecodeInfoHash(t *testing.T) {
-	infoHash, err := DecodeInfoHash("d1c5676ae7ac98e8b19f63565905105e3c4c37a2")
+	infoHash, err := util.DecodeInfoHash("d1c5676ae7ac98e8b19f63565905105e3c4c37a2")
 	if err != nil {
 		t.Fatalf("DecodeInfoHash faiure: %v", err)
 	}

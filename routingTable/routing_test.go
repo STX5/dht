@@ -1,9 +1,10 @@
-package dht
+package routingTable
 
 import (
 	"crypto/rand"
+	"dht/remoteNode"
+	"dht/util"
 	"fmt"
-	"net"
 	"sort"
 	"strings"
 	"testing"
@@ -17,7 +18,7 @@ func BenchmarkInsertRecursive(b *testing.B) {
 
 	// Add 1k nodes to the tree.
 	const count = 1000
-	nodes := make([]*remoteNode, 0, count)
+	nodes := make([]*remoteNode.RemoteNode, 0, count)
 
 	for i := 0; i < count; i++ {
 		rId := make([]byte, 4)
@@ -26,57 +27,17 @@ func BenchmarkInsertRecursive(b *testing.B) {
 		}
 		id := string(rId) + ffff
 		if len(id) != 20 {
-			b.Fatalf("Random infohash construction error, wrong len: want %d, got %d",
+			b.Fatalf("Random InfoHash construction error, wrong len: want %d, got %d",
 				20, len(id))
 		}
-		nodes = append(nodes, &remoteNode{id: id})
+		nodes = append(nodes, &remoteNode.RemoteNode{ID: id})
 	}
 	b.StartTimer()
 	// Each op is adding 1000 nodes to the tree.
 	for i := 0; i < b.N; i++ {
 		tree := &nTree{}
 		for _, r := range nodes {
-			tree.insert(r)
-		}
-	}
-}
-
-func BenchmarkFindClosest(b *testing.B) {
-	b.StopTimer()
-	cfg := NewConfig()
-	cfg.SaveRoutingTable = false
-	node, err := New(cfg)
-	node.nodeId = "00bcdefghij01234567"
-	if err != nil {
-		b.Fatal(err)
-	}
-	// Add 100k nodes to the remote nodes slice.
-	for i := 0; i < 100000; i++ {
-		rId := make([]byte, 4)
-		if _, err := rand.Read(rId); err != nil {
-			b.Fatal("Couldnt produce random numbers for FindClosest:", err)
-		}
-		// Take the first four bytes of rId and use them to build a random IPv4 address.
-		ip := net.IPv4(rId[0], rId[1], rId[2], rId[3])
-		port := i % 65536
-		address := net.UDPAddr{IP: ip, Port: port}
-		r := &remoteNode{
-			lastQueryID: 0,
-			id:          string(rId) + ffff,
-			address:     address,
-		}
-		if len(r.id) != 20 {
-			b.Fatalf("remoteNode construction error, wrong len: want %d, got %d",
-				20, len(r.id))
-		}
-		r.reachable = true
-		node.routingTable.insert(r, "udp")
-	}
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		f := node.routingTable.lookupFiltered(InfoHash(fmt.Sprintf("x%10v", i) + "xxxxxxxxx"))
-		if len(f) != kNodes {
-			b.Fatalf("Missing results. Wanted %d, got %d", kNodes, len(f))
+			tree.Insert(r)
 		}
 	}
 }
@@ -86,38 +47,38 @@ type testData struct {
 	want  int // just the size.
 }
 
-var nodes = []*remoteNode{
-	{id: "\x00"},
-	{id: "\x01"},
-	{id: "\x02"},
-	{id: "\x03"},
-	{id: "\x04"},
-	{id: "\x05"},
-	{id: "\x06"},
-	{id: "\x07"},
-	{id: "\x08"},
-	{id: "\x09"},
-	{id: "\x10"},
+var nodes = []*remoteNode.RemoteNode{
+	{ID: "\x00"},
+	{ID: "\x01"},
+	{ID: "\x02"},
+	{ID: "\x03"},
+	{ID: "\x04"},
+	{ID: "\x05"},
+	{ID: "\x06"},
+	{ID: "\x07"},
+	{ID: "\x08"},
+	{ID: "\x09"},
+	{ID: "\x10"},
 }
 
 func TestNodeDelete(t *testing.T) {
 	tree := &nTree{}
 
 	for _, r := range nodes[:4] {
-		tree.insert(r)
+		tree.Insert(r)
 	}
 	for i, r := range []string{"\x00", "\x01"} {
-		id := InfoHash(r)
+		id := util.InfoHash(r)
 		t.Logf("Removing node: %x", r)
-		tree.cut(id, 0)
-		neighbors := tree.lookup(id)
+		tree.Cut(id, 0)
+		neighbors := tree.Lookup(id)
 		if len(neighbors) == 0 {
 			t.Errorf("Deleted too many nodes.")
 		}
 		if len(neighbors) != 3-i {
 			t.Errorf("Too many nodes left in the tree: got %d, wanted %d", len(neighbors), 3-i)
 		}
-		if r == neighbors[0].id {
+		if r == neighbors[0].ID {
 			t.Errorf("Node didnt get deleted as expected: %x", r)
 		}
 	}
@@ -127,23 +88,23 @@ func TestNodeDelete(t *testing.T) {
 func TestNodeDistance(t *testing.T) {
 	tree := &nTree{}
 	for _, r := range nodes {
-		r.reachable = true
-		tree.insert(r)
+		r.Reachable = true
+		tree.Insert(r)
 	}
 	tests := []testData{
 		{"\x04", 8},
 		{"\x07", 8},
 	}
 	for _, r := range tests {
-		q := InfoHash(r.query)
+		q := util.InfoHash(r.query)
 		distances := make([]string, 0, len(tests))
-		neighbors := tree.lookup(q)
+		neighbors := tree.Lookup(q)
 		if len(neighbors) != r.want {
 			t.Errorf("id: %x, wanted len=%d, got len=%d", q, r.want, len(neighbors))
 			t.Errorf("Details: %#v", neighbors)
 		}
 		for _, x := range neighbors {
-			d := hashDistance(q, InfoHash(x.id))
+			d := util.HashDistance(q, util.InfoHash(x.ID))
 			var b []string
 			for _, c := range d {
 				if c != 0 {
@@ -158,7 +119,7 @@ func TestNodeDistance(t *testing.T) {
 		if !sort.StringsAreSorted(distances) {
 			t.Errorf("Resulting distances for %x are not sorted", r.query)
 			for i, d := range distances {
-				t.Errorf("id: %x, d: %v", neighbors[i].id, d)
+				t.Errorf("id: %x, d: %v", neighbors[i].ID, d)
 			}
 		}
 	}
@@ -171,7 +132,7 @@ func TestNodeDistance(t *testing.T) {
 //
 // #1 In hindsight, this was a very embarrasing first attempt. I kept a list of
 // my nodes, and every time I had to do a lookup, I re-sorted the whole list of
-// nodes in the routing table using the XOR distance to the target infohash.
+// nodes in the routing table using the XOR distance to the target remoteNode.InfoHash.
 // Honestly I had no idea how bad this was when I was wrote it. :-)
 // BenchmarkFindClosest	       1	7020661000 ns/op
 //
@@ -193,7 +154,7 @@ func TestNodeDistance(t *testing.T) {
 // #7 removed an unnecessary wrapper function.
 // BenchmarkFindClosest	  200000	      9691 ns/op
 //
-// #8 Random infohashes now have identical suffix instead of prefix. In the
+// #8 Random remoteNode.InfoHashes now have identical suffix instead of prefix. In the
 // wild, most of the calculations are done in the most significant bits so this
 // is closer to reality.
 // BenchmarkFindClosest	   50000	     35165 ns/op
@@ -208,7 +169,7 @@ func TestNodeDistance(t *testing.T) {
 // BenchmarkInsertRecursive	     500	   4701600 ns/op
 // BenchmarkInsert	     500	   3595448 ns/op
 //
-// #2 Random infohashes have identical suffix instead of prefix.
+// #2 Random remoteNode.InfoHashes have identical suffix instead of prefix.
 // BenchmarkInsertRecursive	     100	  22598150 ns/op
 // BenchmarkInsert	     100	  19239120 ns/op
 //

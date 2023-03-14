@@ -1,6 +1,9 @@
 package dht
 
 import (
+	"crypto/rand"
+	"dht/remoteNode"
+	"dht/util"
 	"expvar"
 	"flag"
 	"fmt"
@@ -10,8 +13,51 @@ import (
 	"testing"
 	"time"
 
-	"github.com/STX5/dht/nettools"
+	"dht/nettools"
 )
+
+// 16 bytes.
+const ffff = "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+
+func BenchmarkFindClosest(b *testing.B) {
+	b.StopTimer()
+	cfg := NewConfig()
+	cfg.SaveRoutingTable = false
+	node, err := New(cfg)
+	node.nodeId = "00bcdefghij01234567"
+	if err != nil {
+		b.Fatal(err)
+	}
+	// Add 100k nodes to the remote nodes slice.
+	for i := 0; i < 100000; i++ {
+		rId := make([]byte, 4)
+		if _, err := rand.Read(rId); err != nil {
+			b.Fatal("Couldnt produce random numbers for FindClosest:", err)
+		}
+		// Take the first four bytes of rId and use them to build a random IPv4 address.
+		ip := net.IPv4(rId[0], rId[1], rId[2], rId[3])
+		port := i % 65536
+		address := net.UDPAddr{IP: ip, Port: port}
+		r := &remoteNode.RemoteNode{
+			LastQueryID: 0,
+			ID:          string(rId) + ffff,
+			Address:     address,
+		}
+		if len(r.ID) != 20 {
+			b.Fatalf("remoteNode construction error, wrong len: want %d, got %d",
+				20, len(r.ID))
+		}
+		r.Reachable = true
+		node.routingTable.Insert(r, "udp")
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		f := node.routingTable.LookupFiltered(util.InfoHash(fmt.Sprintf("x%10v", i) + "xxxxxxxxx"))
+		if len(f) != util.KNodes {
+			b.Fatalf("Missing results. Wanted %d, got %d", util.KNodes, len(f))
+		}
+	}
+}
 
 // ExampleDHT is a simple example that searches for a particular infohash and
 // exits when it finds any peers. A stand-alone version can be found in the
@@ -31,7 +77,7 @@ func ExampleDHT() {
 		return
 	}
 
-	infoHash, err := DecodeInfoHash("d1c5676ae7ac98e8b19f63565905105e3c4c37a2")
+	infoHash, err := util.DecodeInfoHash("d1c5676ae7ac98e8b19f63565905105e3c4c37a2")
 	if err != nil {
 		fmt.Printf("DecodeInfoHash faiure: %v", err)
 		return
@@ -39,7 +85,7 @@ func ExampleDHT() {
 
 	tick := time.Tick(time.Second)
 
-	var infoHashPeers map[InfoHash][]string
+	var infoHashPeers map[util.InfoHash][]string
 	timer := time.NewTimer(30 * time.Second)
 	defer timer.Stop()
 M:
@@ -100,7 +146,7 @@ func drainResults(n *DHT, ih string, targetCount int, timeout time.Duration) err
 		case r := <-n.PeersRequestResults:
 			for _, peers := range r {
 				for _, x := range peers {
-					fmt.Printf("Found peer %d: %v\n", count, DecodePeerAddress(x))
+					fmt.Printf("Found peer %d: %v\n", count, util.DecodePeerAddress(x))
 					count++
 					if count >= targetCount {
 						return nil
@@ -121,8 +167,8 @@ func TestDHTLocal(t *testing.T) {
 		fmt.Println("Skipping TestDHTLocal")
 		return
 	}
-	searchRetryPeriod = time.Second
-	infoHash, err := DecodeInfoHash("d1c5676ae7ac98e8b19f63565905105e3c4c37a2")
+	//searchRetryPeriod := time.Second
+	infoHash, err := util.DecodeInfoHash("d1c5676ae7ac98e8b19f63565905105e3c4c37a2")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -162,7 +208,7 @@ func TestDHTLocal(t *testing.T) {
 	n1.Stop()
 	n2.Stop()
 	n3.Stop()
-	searchRetryPeriod = time.Second * 15
+	//searchRetryPeriod = time.Second * 15
 }
 
 // Requires Internet access and can be flaky if the server or the internet is
@@ -221,9 +267,9 @@ func TestDHTLarge(t *testing.T) {
 	// Test that we can find peers for a known torrent in a timely fashion.
 	//
 	// Torrent from: http://www.clearbits.net/torrents/244-time-management-for-anarchists-1
-	infoHash := InfoHash("\xb4\x62\xc0\xa8\xbc\xef\x1c\xe5\xbb\x56\xb9\xfd\xb8\xcf\x37\xff\xd0\x2f\x5f\x59")
+	infoHash := util.InfoHash("\xb4\x62\xc0\xa8\xbc\xef\x1c\xe5\xbb\x56\xb9\xfd\xb8\xcf\x37\xff\xd0\x2f\x5f\x59")
 	go node.PeersRequest(string(infoHash), true)
-	var infoHashPeers map[InfoHash][]string
+	var infoHashPeers map[util.InfoHash][]string
 	select {
 	case infoHashPeers = <-node.PeersRequestResults:
 		t.Logf("Found %d peers.", len(infoHashPeers[infoHash]))

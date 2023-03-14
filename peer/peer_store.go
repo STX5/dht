@@ -1,7 +1,9 @@
-package dht
+package peer
 
 import (
 	"container/ring"
+
+	"dht/util"
 
 	"github.com/golang/groupcache/lru"
 )
@@ -16,7 +18,7 @@ type peerContactsSet struct {
 // next returns up to 8 peer contacts, if available. Further calls will return a
 // different set of contacts, if possible.
 func (p *peerContactsSet) next() []string {
-	count := kNodes
+	count := util.KNodes
 	if count > len(p.set) {
 		count = len(p.set)
 	}
@@ -123,27 +125,27 @@ func (p *peerContactsSet) Alive() int {
 	return ret
 }
 
-func newPeerStore(maxInfoHashes, maxInfoHashPeers int) *peerStore {
-	return &peerStore{
-		infoHashPeers:        lru.New(maxInfoHashes),
-		localActiveDownloads: make(map[InfoHash]int),
-		maxInfoHashes:        maxInfoHashes,
-		maxInfoHashPeers:     maxInfoHashPeers,
+func NewPeerStore(maxInfoHashes, maxInfoHashPeers int) *PeerStore {
+	return &PeerStore{
+		InfoHashPeers:        lru.New(maxInfoHashes),
+		LocalActiveDownloads: make(map[util.InfoHash]int),
+		MaxInfoHashes:        maxInfoHashes,
+		MaxInfoHashPeers:     maxInfoHashPeers,
 	}
 }
 
-type peerStore struct {
+type PeerStore struct {
 	// cache of peers for infohashes. Each key is an infohash and the
 	// values are peerContactsSet.
-	infoHashPeers *lru.Cache
+	InfoHashPeers *lru.Cache
 	// infoHashes for which we are peers.
-	localActiveDownloads map[InfoHash]int // value is port number
-	maxInfoHashes        int
-	maxInfoHashPeers     int
+	LocalActiveDownloads map[util.InfoHash]int // value is port number
+	MaxInfoHashes        int
+	MaxInfoHashPeers     int
 }
 
-func (h *peerStore) get(ih InfoHash) *peerContactsSet {
-	c, ok := h.infoHashPeers.Get(string(ih))
+func (h *PeerStore) Get(ih util.InfoHash) *peerContactsSet {
+	c, ok := h.InfoHashPeers.Get(string(ih))
 	if !ok {
 		return nil
 	}
@@ -152,16 +154,16 @@ func (h *peerStore) get(ih InfoHash) *peerContactsSet {
 }
 
 // count shows the number of known peers for the given infohash.
-func (h *peerStore) count(ih InfoHash) int {
-	peers := h.get(ih)
+func (h *PeerStore) Count(ih util.InfoHash) int {
+	peers := h.Get(ih)
 	if peers == nil {
 		return 0
 	}
 	return peers.Size()
 }
 
-func (h *peerStore) alive(ih InfoHash) int {
-	peers := h.get(ih)
+func (h *PeerStore) Alive(ih util.InfoHash) int {
+	peers := h.Get(ih)
 	if peers == nil {
 		return 0
 	}
@@ -169,8 +171,8 @@ func (h *peerStore) alive(ih InfoHash) int {
 }
 
 // peerContacts returns a random set of 8 peers for the ih InfoHash.
-func (h *peerStore) peerContacts(ih InfoHash) []string {
-	peers := h.get(ih)
+func (h *PeerStore) PeerContacts(ih util.InfoHash) []string {
+	peers := h.Get(ih)
 	if peers == nil {
 		return nil
 	}
@@ -179,14 +181,14 @@ func (h *peerStore) peerContacts(ih InfoHash) []string {
 
 // addContact as a peer for the provided ih. Returns true if the contact was
 // added, false otherwise (e.g: already present, or invalid).
-func (h *peerStore) addContact(ih InfoHash, peerContact string) bool {
+func (h *PeerStore) AddContact(ih util.InfoHash, peerContact string) bool {
 	var peers *peerContactsSet
-	p, ok := h.infoHashPeers.Get(string(ih))
+	p, ok := h.InfoHashPeers.Get(string(ih))
 	if ok {
 		var okType bool
 		peers, okType = p.(*peerContactsSet)
 		if okType && peers != nil {
-			if peers.Size() >= h.maxInfoHashPeers {
+			if peers.Size() >= h.MaxInfoHashPeers {
 				if _, ok := peers.set[peerContact]; ok {
 					return false
 				}
@@ -194,36 +196,36 @@ func (h *peerStore) addContact(ih InfoHash, peerContact string) bool {
 					return false
 				}
 			}
-			h.infoHashPeers.Add(string(ih), peers)
+			h.InfoHashPeers.Add(string(ih), peers)
 			return peers.put(peerContact)
 		}
 		// Bogus peer contacts, reset them.
 	}
 	peers = &peerContactsSet{set: make(map[string]bool)}
-	h.infoHashPeers.Add(string(ih), peers)
+	h.InfoHashPeers.Add(string(ih), peers)
 	return peers.put(peerContact)
 }
 
-func (h *peerStore) killContact(peerContact string) {
+func (h *PeerStore) KillContact(peerContact string) {
 	if h == nil {
 		return
 	}
-	for ih := range h.localActiveDownloads {
-		if p := h.get(ih); p != nil {
+	for ih := range h.LocalActiveDownloads {
+		if p := h.Get(ih); p != nil {
 			p.kill(peerContact)
 		}
 	}
 }
 
-func (h *peerStore) addLocalDownload(ih InfoHash, port int) {
-	h.localActiveDownloads[ih] = port
+func (h *PeerStore) AddLocalDownload(ih util.InfoHash, port int) {
+	h.LocalActiveDownloads[ih] = port
 }
 
-func (h *peerStore) hasLocalDownload(ih InfoHash) (port int) {
-	port = h.localActiveDownloads[ih]
+func (h *PeerStore) HasLocalDownload(ih util.InfoHash) (port int) {
+	port = h.LocalActiveDownloads[ih]
 	return
 }
 
-func (h *peerStore) removeLocalDownload(ih InfoHash) {
-	delete(h.localActiveDownloads, ih)
+func (h *PeerStore) RemoveLocalDownload(ih util.InfoHash) {
+	delete(h.LocalActiveDownloads, ih)
 }
