@@ -220,7 +220,7 @@ func (h *peerStore) addLocalDownload(ih InfoHash, port int) {
 }
 
 func (h *peerStore) hasLocalDownload(ih InfoHash) (port int) {
-	port, _ = h.localActiveDownloads[ih]
+	port = h.localActiveDownloads[ih]
 	return
 }
 

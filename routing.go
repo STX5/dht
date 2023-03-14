@@ -253,5 +253,4 @@ func hashDistance(id1 InfoHash, id2 InfoHash) (distance string) {
 		}
 		return string(d)
 	}
-	return ""
 }

@@ -84,7 +84,7 @@ func startNode(routers string, ih string) (*DHT, error) {
 		return nil, err
 	}
 	// Remove the buffer
-	node.peersRequest = make(chan ihReq, 0)
+	node.peersRequest = make(chan ihReq)
 	if err = node.Start(); err != nil {
 		return nil, err
 	}

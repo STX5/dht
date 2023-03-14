@@ -413,12 +413,12 @@ func (d *DHT) loop() {
 
 	d.bootstrap()
 
-	cleanupTicker := time.Tick(d.config.CleanupPeriod)
-	secretRotateTicker := time.Tick(secretRotatePeriod)
+	cleanupTicker := time.NewTicker(d.config.CleanupPeriod).C
+	secretRotateTicker := time.NewTicker(secretRotatePeriod).C
 
 	saveTicker := make(<-chan time.Time)
 	if d.store != nil {
-		saveTicker = time.Tick(d.config.SavePeriod)
+		saveTicker = time.NewTicker(d.config.SavePeriod).C
 	}
 
 	var fillTokenBucket <-chan time.Time
@@ -428,7 +428,7 @@ func (d *DHT) loop() {
 		d.DebugLogger.Infof("rate limiting disabled")
 	} else {
 		// Token bucket for limiting the number of packets per second.
-		fillTokenBucket = time.Tick(time.Second / 10)
+		fillTokenBucket = time.NewTicker(time.Second / 10).C
 		if d.config.RateLimit > 0 && d.config.RateLimit < 10 {
 			// Less than 10 leads to rounding problems.
 			d.config.RateLimit = 10
