@@ -40,12 +40,12 @@ import (
 	"sync"
 	"time"
 
-	"dht/arena"
 	"dht/logger"
 	"dht/peer"
 	"dht/remoteNode"
 	"dht/routingTable"
 	"dht/util"
+	"dht/util/arena"
 )
 
 // Config for the DHT Node. Use NewConfig to create a configuration with default values.

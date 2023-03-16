@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"dht/arena"
 	"dht/logger"
 	"dht/util"
+	"dht/util/arena"
 
 	bencode "github.com/jackpal/bencode-go"
 )
