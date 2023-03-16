@@ -10,7 +10,7 @@
 //
 // There is a builtin web server that can be used to collect debugging stats
 // from http://localhost:8711/debug/vars.
-package dht
+package main
 
 import (
 	"flag"

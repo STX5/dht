@@ -46,8 +46,6 @@ import (
 	"dht/remoteNode"
 	"dht/routingTable"
 	"dht/util"
-
-	"dht/nettools"
 )
 
 // Config for the DHT Node. Use NewConfig to create a configuration with default values.
@@ -169,7 +167,7 @@ type DHT struct {
 	removeInfoHash         chan util.InfoHash
 	stop                   chan bool
 	wg                     sync.WaitGroup
-	clientThrottle         *nettools.ClientThrottle
+	clientThrottle         *util.ClientThrottle
 	store                  *dhtStore
 	tokenSecrets           []string
 }
@@ -199,7 +197,7 @@ func New(config *Config) (node *DHT, err error) {
 		pingRequest:    make(chan *remoteNode.RemoteNode),
 		portRequest:    make(chan int),
 		removeInfoHash: make(chan util.InfoHash),
-		clientThrottle: nettools.NewThrottler(cfg.ClientPerMinuteLimit, cfg.ThrottlerTrackedClients),
+		clientThrottle: util.NewThrottler(cfg.ClientPerMinuteLimit, cfg.ThrottlerTrackedClients),
 	}
 	routingTable := routingTable.NewRoutingTable(&node.DebugLogger)
 	node.routingTable = routingTable
@@ -847,14 +845,14 @@ func (d *DHT) replyAnnouncePeer(addr net.UDPAddr, node *remoteNode.RemoteNode, r
 	// from a node it doesn't yet know about.
 	if node != nil && d.checkToken(addr, r.A.Token) {
 		peerAddr := net.TCPAddr{IP: addr.IP, Port: r.A.Port}
-		d.peerStore.AddContact(ih, nettools.DottedPortToBinary(peerAddr.String()))
+		d.peerStore.AddContact(ih, util.DottedPortToBinary(peerAddr.String()))
 		// Allow searching this node immediately, since it's telling us
 		// it has an infohash. Enables faster upgrade of other nodes to
 		// "peer" of an infohash, if the announcement is valid.
 		node.LastResponseTime = time.Now().Add(-remoteNode.SearchRetryPeriod)
 		port := d.peerStore.HasLocalDownload(ih)
 		if port != 0 {
-			d.PeersRequestResults <- map[util.InfoHash][]string{ih: {nettools.DottedPortToBinary(peerAddr.String())}}
+			d.PeersRequestResults <- map[util.InfoHash][]string{ih: {util.DottedPortToBinary(peerAddr.String())}}
 		}
 	}
 	// Always reply positively. jech says this is to avoid "back-tracking", not sure what that means.
@@ -896,7 +894,7 @@ func (d *DHT) nodesForInfoHash(ih util.InfoHash) string {
 	for _, r := range d.routingTable.Lookup(ih) {
 		// r is nil when the node was filtered.
 		if r != nil {
-			binaryHost := r.ID + nettools.DottedPortToBinary(r.Address.String())
+			binaryHost := r.ID + util.DottedPortToBinary(r.Address.String())
 			if binaryHost == "" {
 				d.DebugLogger.Debugf("killing node with bogus address %v", r.Address.String())
 				d.routingTable.Kill(r, d.peerStore)
@@ -1067,7 +1065,7 @@ func (d *DHT) processFindNodeResults(node *remoteNode.RemoteNode, resp remoteNod
 	} else if d.config.UDPProto == "udp6" {
 		nodelist = resp.R.Nodes6
 	}
-	d.DebugLogger.Debugf("processFindNodeResults find_node = %s len(nodelist)=%d", nettools.BinaryToDottedPort(node.AddressBinaryFormat), len(nodelist))
+	d.DebugLogger.Debugf("processFindNodeResults find_node = %s len(nodelist)=%d", util.BinaryToDottedPort(node.AddressBinaryFormat), len(nodelist))
 
 	if nodelist != "" {
 		for id, address := range remoteNode.ParseNodesString(nodelist, d.config.UDPProto, d.DebugLogger) {

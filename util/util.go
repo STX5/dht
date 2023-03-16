@@ -1,7 +1,6 @@
 package util
 
 import (
-	"dht/nettools"
 	"encoding/hex"
 	"fmt"
 )
@@ -34,7 +33,7 @@ func DecodeInfoHash(x string) (b InfoHash, err error) {
 // DecodePeerAddress transforms the binary-encoded host:port address into a
 // human-readable format. So, "abcdef" becomes 97.98.99.100:25958.
 func DecodePeerAddress(x string) string {
-	return nettools.BinaryToDottedPort(x)
+	return BinaryToDottedPort(x)
 }
 
 // Calculates the distance between two hashes. In DHT/Kademlia, "distance" is

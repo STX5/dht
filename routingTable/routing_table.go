@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"dht/logger"
-	"dht/nettools"
 	"dht/peer"
 	"dht/remoteNode"
 	"dht/util"
@@ -180,7 +179,7 @@ func (r *RoutingTable) Kill(n *remoteNode.RemoteNode, p *peer.PeerStore) {
 	if r.BoundaryNode != nil && n.ID == r.BoundaryNode.ID {
 		r.ResetNeighborhoodBoundary()
 	}
-	p.KillContact(nettools.BinaryToDottedPort(n.AddressBinaryFormat))
+	p.KillContact(util.BinaryToDottedPort(n.AddressBinaryFormat))
 }
 
 func (r *RoutingTable) ResetNeighborhoodBoundary() {
@@ -279,7 +278,7 @@ func (r *RoutingTable) AddNewNeighbor(n *remoteNode.RemoteNode, displaceBoundary
 	} else {
 		r.ResetNeighborhoodBoundary()
 	}
-	(*r.Log).Debugf("New neighbor added %s with proximity %d", nettools.BinaryToDottedPort(n.AddressBinaryFormat), r.Proximity)
+	(*r.Log).Debugf("New neighbor added %s with proximity %d", util.BinaryToDottedPort(n.AddressBinaryFormat), r.Proximity)
 }
 
 // pingSlowly pings the remote nodes in needPing, distributing the pings

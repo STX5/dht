@@ -12,8 +12,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"dht/nettools"
 )
 
 // 16 bytes.
@@ -104,7 +102,7 @@ M:
 	}
 	for ih, peers := range infoHashPeers {
 		if len(peers) > 0 {
-			// Peers are encoded in binary format. Decoding example using github.com/nictuku/nettools:
+			// Peers are encoded in binary format. Decoding example using github.com/nictuku/util:
 			//for _, peer := range peers {
 			//	fmt.Println(DecodePeerAddress(peer))
 			//}
@@ -284,7 +282,7 @@ func TestDHTLarge(t *testing.T) {
 			t.Fatal("Could not find new torrent peers.")
 		}
 		for _, peer := range peers {
-			t.Logf("peer found: %v", nettools.BinaryToDottedPort(peer))
+			t.Logf("peer found: %v", util.BinaryToDottedPort(peer))
 		}
 	}
 }

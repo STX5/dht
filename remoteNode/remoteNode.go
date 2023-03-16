@@ -3,7 +3,6 @@ package remoteNode
 import (
 	"crypto/rand"
 	"dht/logger"
-	"dht/nettools"
 	"dht/util"
 	"io"
 	"net"
@@ -34,7 +33,7 @@ type RemoteNode struct {
 func NewRemoteNode(addr net.UDPAddr, id string, log *logger.DebugLogger) *RemoteNode {
 	return &RemoteNode{
 		Address:             addr,
-		AddressBinaryFormat: nettools.DottedPortToBinary(addr.String()),
+		AddressBinaryFormat: util.DottedPortToBinary(addr.String()),
 		LastQueryID:         NewTransactionId(),
 		ID:                  id,
 		Reachable:           false,

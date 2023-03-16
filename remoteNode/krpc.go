@@ -10,7 +10,6 @@ import (
 
 	"dht/arena"
 	"dht/logger"
-	"dht/nettools"
 	"dht/util"
 
 	bencode "github.com/jackpal/bencode-go"
@@ -59,7 +58,7 @@ func ParseNodesString(nodes string, proto string, log logger.DebugLogger) (parse
 	}
 	for i := 0; i < len(nodes); i += nodeContactLen {
 		id := nodes[i : i+NodeIdLen]
-		address := nettools.BinaryToDottedPort(nodes[i+NodeIdLen : i+nodeContactLen])
+		address := util.BinaryToDottedPort(nodes[i+NodeIdLen : i+nodeContactLen])
 		parsed[id] = address
 	}
 	return
