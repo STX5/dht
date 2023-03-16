@@ -26,6 +26,7 @@ func (d *DHT) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		w.Header().Add("Content-Type", "application/json")
 		// TODO
+		// PARA
 	case http.MethodPost:
 		dec := json.NewDecoder(r.Body)
 		var r Registration
