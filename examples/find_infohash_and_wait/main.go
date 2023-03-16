@@ -19,7 +19,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/STX5/dht"
+	"dht"
+	"dht/util"
 )
 
 const (
@@ -38,7 +39,7 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	ih, err := dht.DecodeInfoHash(flag.Args()[0])
+	ih, err := util.DecodeInfoHash(flag.Args()[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "DecodeInfoHash error: %v\n", err)
 		os.Exit(1)
@@ -74,7 +75,7 @@ func drainresults(n *dht.DHT) {
 	for r := range n.PeersRequestResults {
 		for _, peers := range r {
 			for _, x := range peers {
-				fmt.Printf("%d: %v\n", count, dht.DecodePeerAddress(x))
+				fmt.Printf("%d: %v\n", count, util.DecodePeerAddress(x))
 				count++
 				if count >= numTarget {
 					os.Exit(0)
