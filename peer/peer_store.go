@@ -2,7 +2,6 @@ package peer
 
 import (
 	"container/ring"
-
 	"dht/util"
 
 	"github.com/golang/groupcache/lru"
